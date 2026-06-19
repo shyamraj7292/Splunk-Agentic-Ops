@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sentinel - SOC Triage Dashboard</title>
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-icon">&#128737;</span>
+        <div class="brand-text">
+          <h1>SENTINEL</h1>
+          <p>Agentic SOC Tier-1 Triage Analyst &mdash; built on the Splunk MCP Server</p>
+        </div>
+      </div>
+      <div class="status" id="status">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-text">Connecting&hellip;</span>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <h2>Notable Events</h2>
+        <p class="sidebar-hint">Select an alert to load its context and run an autonomous triage.</p>
+        <div id="scenario-list" class="scenario-list"></div>
+        <div class="sidebar-footer">
+          Demo data inspired by the Boss of the SOC (BOTS) dataset.<br />
+          Reasoning: Foundation-sec &rarr; Claude &rarr; offline simulation.
+        </div>
+      </aside>
+
+      <main class="main">
+        <div id="empty-state" class="empty-state">
+          <div class="empty-state-icon">&#128272;</div>
+          <h2>No notable event selected</h2>
+          <p>Choose a notable event from the left-hand queue to view its raw alert, then launch Sentinel to
+            investigate it end-to-end&mdash;evidence gathering, MITRE ATT&amp;CK mapping, and a final
+            verdict with recommended actions.</p>
+        </div>
+
+        <section id="alert-panel" class="panel alert-panel hidden">
+          <div class="panel-header">
+            <h2 id="alert-title">Alert</h2>
+            <div class="panel-header-badges">
+              <span id="alert-category" class="category-pill"></span>
+              <span id="alert-severity" class="severity-badge"></span>
+            </div>
+          </div>
+          <p id="alert-description" class="alert-description"></p>
+          <div id="alert-grid" class="alert-grid"></div>
+          <pre id="alert-raw" class="alert-raw hidden"></pre>
+          <button id="run-btn" class="run-btn">Run Investigation</button>
+        </section>
+
+        <section id="trace-panel" class="panel trace-panel hidden">
+          <div class="panel-header">
+            <h2>Live Investigation</h2>
+            <span id="trace-status" class="trace-status"></span>
+          </div>
+          <div id="trace-events" class="trace-events"></div>
+        </section>
+
+        <section id="report-panel" class="panel report-panel hidden">
+          <div class="panel-header">
+            <h2>Investigation Report</h2>
+          </div>
+
+          <div class="report-summary">
+            <div id="report-verdict" class="verdict-badge"></div>
+            <div id="report-severity" class="severity-badge"></div>
+            <div class="confidence">
+              <span class="confidence-label">Confidence</span>
+              <div class="confidence-bar"><div id="report-confidence-fill" class="confidence-fill"></div></div>
+              <span id="report-confidence-text" class="confidence-text"></span>
+            </div>
+          </div>
+
+          <div id="report-meta" class="report-meta"></div>
+
+          <h3>Narrative</h3>
+          <p id="report-narrative" class="report-narrative"></p>
+
+          <h3>MITRE ATT&amp;CK Techniques</h3>
+          <div id="report-mitre" class="mitre-chips"></div>
+
+          <h3>Recommended Actions</h3>
+          <ul id="report-actions" class="actions-list"></ul>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

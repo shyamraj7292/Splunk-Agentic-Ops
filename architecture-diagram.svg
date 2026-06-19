@@ -1,0 +1,218 @@
+<svg viewBox="0 0 1200 770" xmlns="http://www.w3.org/2000/svg"
+     font-family="'Segoe UI', Helvetica, Arial, sans-serif">
+
+  <!-- Background -->
+  <rect width="1200" height="770" fill="#0a0e16"/>
+
+  <defs>
+    <!-- Arrowhead - orient="auto" aligns with line direction -->
+    <marker id="ah" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#38bdf8" opacity="0.75"/>
+    </marker>
+    <marker id="ah-green" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#4ade80" opacity="0.75"/>
+    </marker>
+  </defs>
+
+  <!-- ══════════════════════ TITLE ══════════════════════ -->
+  <text x="600" y="24" text-anchor="middle" font-size="15" font-weight="700"
+        fill="#38bdf8" letter-spacing="2">
+    SENTINEL — AGENTIC SOC TRIAGE ARCHITECTURE
+  </text>
+
+  <!-- ══════════════════════ TOP: ENTRY / DISPLAY ══════════════════════ -->
+  <rect x="300" y="38" width="600" height="118" rx="9"
+        fill="#11182a" stroke="#4a7ab5" stroke-width="1.5"/>
+  <text x="600" y="59" text-anchor="middle" font-size="13" font-weight="700" fill="#e6ebf5">
+    Entry Points &amp; Output Display
+  </text>
+  <line x1="309" y1="66" x2="891" y2="66" stroke="#233052" stroke-width="1"/>
+
+  <!-- CLI column (left half) -->
+  <text x="322" y="83" font-size="11" font-weight="600" fill="#38bdf8">CLI Demo</text>
+  <text x="322" y="99"  font-size="10" fill="#e6ebf5">scripts/run_demo.py</text>
+  <text x="322" y="114" font-size="10" fill="#8b97b5">--list  |  --scenario &lt;id&gt;  |  --all  |  --save-dir</text>
+  <text x="322" y="128" font-size="10" fill="#8b97b5">Rich terminal trace · Markdown report export</text>
+  <text x="322" y="142" font-size="10" fill="#8b97b5">scripts/setup_check.py — day-0 env verification</text>
+
+  <!-- Vertical divider -->
+  <line x1="598" y1="70" x2="598" y2="150" stroke="#233052" stroke-width="1"/>
+
+  <!-- Web column (right half) -->
+  <text x="614" y="83" font-size="11" font-weight="600" fill="#38bdf8">Web Dashboard</text>
+  <text x="614" y="99"  font-size="10" fill="#e6ebf5">web/server.py + web/static/</text>
+  <text x="614" y="114" font-size="10" fill="#8b97b5">FastAPI backend · Server-Sent Events streaming</text>
+  <text x="614" y="128" font-size="10" fill="#8b97b5">Dark SOC dashboard (HTML / CSS / vanilla JS)</text>
+  <text x="614" y="142" font-size="10" fill="#8b97b5">GET /api/investigate/{id} → live TraceEvent stream</text>
+
+  <!-- Arrow: Entry → Hub (down) — alert + scenario -->
+  <line x1="593" y1="156" x2="593" y2="254" stroke="#38bdf8" stroke-opacity="0.55"
+        stroke-width="1.5" marker-end="url(#ah)"/>
+  <!-- Arrow: Hub → Entry (up) — TraceEvent stream -->
+  <line x1="607" y1="254" x2="607" y2="156" stroke="#38bdf8" stroke-opacity="0.55"
+        stroke-width="1.5" marker-end="url(#ah)"/>
+  <text x="576" y="207" text-anchor="end" font-size="9" fill="#8b97b5" font-style="italic">alert+scenario</text>
+  <text x="624" y="207" font-size="9" fill="#8b97b5" font-style="italic">TraceEvents</text>
+
+  <!-- ══════════════════════ CENTER: TRIAGE AGENT HUB ══════════════════════ -->
+  <rect x="330" y="264" width="540" height="248" rx="9"
+        fill="#0d1828" stroke="#38bdf8" stroke-width="2"/>
+  <text x="600" y="288" text-anchor="middle" font-size="14" font-weight="700" fill="#38bdf8">
+    TriageAgent — ReAct Investigation Loop
+  </text>
+  <text x="600" y="303" text-anchor="middle" font-size="10" fill="#8b97b5">
+    agent/triage_agent.py
+  </text>
+  <line x1="339" y1="311" x2="861" y2="311" stroke="#1e3060" stroke-width="1"/>
+
+  <!-- ReAct steps -->
+  <text x="355" y="330" font-size="12" fill="#38bdf8">①</text>
+  <text x="373" y="330" font-size="11" fill="#e6ebf5">Plan — llm.decide_next_action(alert, history, tools) → AgentAction</text>
+
+  <text x="355" y="350" font-size="12" fill="#38bdf8">②</text>
+  <text x="373" y="350" font-size="11" fill="#e6ebf5">Act  — client.call_tool(tool_name, arguments)</text>
+
+  <text x="355" y="370" font-size="12" fill="#38bdf8">③</text>
+  <text x="373" y="370" font-size="11" fill="#e6ebf5">Observe — ToolResult(data, indicator_tags) → append to history</text>
+
+  <text x="355" y="390" font-size="12" fill="#38bdf8">④</text>
+  <text x="373" y="390" font-size="11" fill="#e6ebf5">Repeat  — until action == "finalize" or step == AGENT_MAX_STEPS</text>
+
+  <text x="355" y="410" font-size="12" fill="#38bdf8">⑤</text>
+  <text x="373" y="410" font-size="11" fill="#e6ebf5">Finalize — llm.finalize_verdict(alert, history) → Verdict + MITRE merge</text>
+
+  <line x1="339" y1="424" x2="861" y2="424" stroke="#1e3060" stroke-width="1"/>
+
+  <text x="600" y="441" text-anchor="middle" font-size="10" fill="#8b97b5">Yields TraceEvents:</text>
+  <text x="600" y="458" text-anchor="middle" font-size="11" fill="#e6ebf5">
+    start  ·  thought  ·  action  ·  observation  ·  verdict
+  </text>
+  <text x="600" y="474" text-anchor="middle" font-size="10" fill="#8b97b5">
+    JSON over SSE (web UI) or printed to terminal (CLI)  ·  0.5 s mock delay configurable
+  </text>
+  <text x="600" y="492" text-anchor="middle" font-size="10" fill="#8b97b5">
+    max steps: AGENT_MAX_STEPS=6  ·  async generator — caller iterates at its own pace
+  </text>
+
+  <!-- Interface micro-labels at hub edges -->
+  <text x="336" y="365" font-size="8" fill="#38bdf8" opacity="0.6">call_tool() ›</text>
+  <text x="336" y="376" font-size="8" fill="#38bdf8" opacity="0.6">‹ ToolResult</text>
+  <text x="864" y="365" text-anchor="end" font-size="8" fill="#38bdf8" opacity="0.6">‹ AgentAction/Verdict</text>
+  <text x="864" y="376" text-anchor="end" font-size="8" fill="#38bdf8" opacity="0.6">alert+history ›</text>
+
+  <!-- ══════════════════════ LEFT: SPLUNK MCP CLIENT ══════════════════════ -->
+  <rect x="10" y="262" width="286" height="252" rx="9"
+        fill="#11182a" stroke="#233052" stroke-width="1.5"/>
+  <text x="153" y="284" text-anchor="middle" font-size="12" font-weight="700" fill="#e6ebf5">SplunkMCPClient</text>
+  <text x="153" y="298" text-anchor="middle" font-size="10" fill="#8b97b5">agent/mcp_client.py</text>
+  <line x1="19" y1="305" x2="287" y2="305" stroke="#233052" stroke-width="1"/>
+
+  <text x="22" y="321" font-size="9" font-weight="600" fill="#8b97b5" letter-spacing="1">TOOL CATALOG</text>
+  <text x="22" y="337" font-size="10" fill="#e6ebf5">• splunk_search</text>
+  <text x="22" y="351" font-size="10" fill="#e6ebf5">• saia_generate_spl</text>
+  <text x="22" y="365" font-size="10" fill="#e6ebf5">• saia_explain_spl</text>
+  <text x="22" y="379" font-size="10" fill="#e6ebf5">• get_asset_context</text>
+  <text x="22" y="393" font-size="10" fill="#e6ebf5">• get_identity_context</text>
+
+  <line x1="19" y1="401" x2="287" y2="401" stroke="#233052" stroke-width="1"/>
+
+  <text x="22" y="416" font-size="9" font-weight="600" fill="#4ade80" letter-spacing="1">MOCK (default, zero infra)</text>
+  <text x="22" y="430" font-size="10" fill="#8b97b5">MockSplunkBackend — agent/mock_backend.py</text>
+  <text x="22" y="444" font-size="10" fill="#8b97b5">data/scenarios/*.json  (BOTS-inspired)</text>
+  <text x="22" y="458" font-size="10" fill="#8b97b5">keyword scoring + step-progression logic</text>
+
+  <line x1="19" y1="465" x2="287" y2="465" stroke="#233052" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <text x="22" y="479" font-size="9" font-weight="600" fill="#fb923c" letter-spacing="1">LIVE (SPLUNK_MODE=live)</text>
+  <text x="22" y="493" font-size="10" fill="#8b97b5">Splunk MCP Server  ·  GA Feb 2026</text>
+  <text x="22" y="507" font-size="10" fill="#8b97b5">stdio or SSE transport  ·  mcp≥1.2.0</text>
+
+  <!-- Arrows: MCP ↔ Hub (gap: MCP right=296, Hub left=330, 34px) -->
+  <!-- call_tool → MCP: right to left (from hub-left toward mcp-right) -->
+  <line x1="326" y1="362" x2="298" y2="362" stroke="#38bdf8" stroke-opacity="0.6"
+        stroke-width="1.5" marker-end="url(#ah)"/>
+  <!-- ToolResult ← MCP: left to right -->
+  <line x1="298" y1="376" x2="326" y2="376" stroke="#38bdf8" stroke-opacity="0.6"
+        stroke-width="1.5" marker-end="url(#ah)"/>
+
+  <!-- ══════════════════════ RIGHT: LLM CLIENT ══════════════════════ -->
+  <rect x="904" y="262" width="286" height="252" rx="9"
+        fill="#11182a" stroke="#233052" stroke-width="1.5"/>
+  <text x="1047" y="284" text-anchor="middle" font-size="12" font-weight="700" fill="#e6ebf5">LLM Client Factory</text>
+  <text x="1047" y="298" text-anchor="middle" font-size="10" fill="#8b97b5">agent/llm_client.py · get_llm_client()</text>
+  <line x1="913" y1="305" x2="1181" y2="305" stroke="#233052" stroke-width="1"/>
+
+  <text x="918" y="320" font-size="9" fill="#8b97b5" font-style="italic">First match wins:</text>
+
+  <!-- Backend 1 -->
+  <rect x="913" y="326" width="268" height="58" rx="5" fill="#0a1830"
+        stroke="#38bdf8" stroke-width="1" stroke-opacity="0.6"/>
+  <text x="922" y="343" font-size="10" font-weight="600" fill="#38bdf8">[1] Splunk Foundation-sec</text>
+  <text x="922" y="357" font-size="10" fill="#8b97b5">FOUNDATION_SEC_BASE_URL set</text>
+  <text x="922" y="371" font-size="10" fill="#8b97b5">foundation-sec-8b-instruct · OpenAI-compat API</text>
+
+  <!-- Backend 2 -->
+  <rect x="913" y="392" width="268" height="44" rx="5" fill="#0a1830" stroke="#233052" stroke-width="1"/>
+  <text x="922" y="408" font-size="10" font-weight="600" fill="#e6ebf5">[2] Anthropic Claude</text>
+  <text x="922" y="423" font-size="10" fill="#8b97b5">ANTHROPIC_API_KEY set  ·  claude-sonnet-4-6</text>
+
+  <!-- Backend 3 -->
+  <rect x="913" y="444" width="268" height="44" rx="5" fill="#0a1830"
+        stroke="#4ade80" stroke-width="1" stroke-opacity="0.55"/>
+  <text x="922" y="460" font-size="10" font-weight="600" fill="#4ade80">[3] Simulated Reasoning</text>
+  <text x="922" y="475" font-size="10" fill="#8b97b5">no API key · fully offline demo mode</text>
+
+  <text x="1047" y="506" text-anchor="middle" font-size="10" fill="#8b97b5">Protocol:</text>
+  <text x="1047" y="520" text-anchor="middle" font-size="10" fill="#e6ebf5">decide_next_action()  ·  finalize_verdict()</text>
+
+  <!-- Arrows: Hub ↔ LLM (Hub right=870, LLM left=904, gap=34px) -->
+  <!-- AgentAction ← LLM: from LLM-left toward Hub-right (going left) -->
+  <line x1="900" y1="362" x2="874" y2="362" stroke="#38bdf8" stroke-opacity="0.6"
+        stroke-width="1.5" marker-end="url(#ah)"/>
+  <!-- alert+history → LLM: going right -->
+  <line x1="874" y1="376" x2="900" y2="376" stroke="#38bdf8" stroke-opacity="0.6"
+        stroke-width="1.5" marker-end="url(#ah)"/>
+
+  <!-- ══════════════════════ ARROW: Hub → Report ══════════════════════ -->
+  <line x1="600" y1="512" x2="600" y2="572" stroke="#38bdf8" stroke-opacity="0.55"
+        stroke-width="1.5" marker-end="url(#ah)"/>
+  <text x="612" y="545" font-size="9" fill="#8b97b5" font-style="italic">evidence log + discovered tags + Verdict</text>
+
+  <!-- ══════════════════════ BOTTOM: MITRE + REPORT ══════════════════════ -->
+  <rect x="60" y="580" width="1080" height="160" rx="9"
+        fill="#11182a" stroke="#233052" stroke-width="1.5"/>
+  <text x="600" y="602" text-anchor="middle" font-size="13" font-weight="700" fill="#e6ebf5">
+    MITRE ATT&amp;CK Mapping  ·  Investigation Report
+  </text>
+  <text x="600" y="616" text-anchor="middle" font-size="10" fill="#8b97b5">
+    agent/mitre_mapping.py  ·  agent/report.py
+  </text>
+  <line x1="69" y1="623" x2="1131" y2="623" stroke="#233052" stroke-width="1"/>
+
+  <!-- MITRE left half -->
+  <text x="84" y="641" font-size="11" font-weight="600" fill="#38bdf8">MITRE ATT&amp;CK Mapping</text>
+  <text x="84" y="657" font-size="10" fill="#e6ebf5">map_indicators_to_techniques(indicator_tags)</text>
+  <text x="84" y="672" font-size="10" fill="#8b97b5">14 ATT&amp;CK techniques  ·  12 indicator tags mapped</text>
+  <text x="84" y="687" font-size="10" fill="#8b97b5">phishing_attachment → T1566.001, T1204.002</text>
+  <text x="84" y="702" font-size="10" fill="#8b97b5">c2_beaconing → T1071.001  ·  encoded_powershell → T1027</text>
+  <text x="84" y="717" font-size="10" fill="#8b97b5">each technique: id · name · tactic · attack.mitre.org URL</text>
+  <text x="84" y="732" font-size="10" fill="#8b97b5">merged with LLM-cited techniques (LLM results take precedence)</text>
+
+  <!-- Vertical divider -->
+  <line x1="600" y1="628" x2="600" y2="732" stroke="#233052" stroke-width="1"/>
+
+  <!-- Report right half -->
+  <text x="616" y="641" font-size="11" font-weight="600" fill="#38bdf8">InvestigationReport → Verdict</text>
+  <text x="616" y="657" font-size="10" fill="#e6ebf5">verdict: true_positive | false_positive | escalate</text>
+  <text x="616" y="672" font-size="10" fill="#e6ebf5">severity · confidence · narrative · mitre_techniques</text>
+  <text x="616" y="687" font-size="10" fill="#e6ebf5">recommended_actions  ·  evidence_log  ·  backend_name</text>
+  <text x="616" y="702" font-size="10" fill="#8b97b5">report_to_markdown() → Markdown file saved by CLI</text>
+  <text x="616" y="717" font-size="10" fill="#8b97b5">to_dict() → JSON → SSE "verdict" event consumed by web UI</text>
+  <text x="616" y="732" font-size="10" fill="#8b97b5">agent/scenarios.py · agent/config.py provide alert + settings</text>
+
+  <!-- Bottom legend -->
+  <text x="600" y="756" text-anchor="middle" font-size="9" fill="#374460">
+    github.com/shyamraj7292/Splunk-Agentic-Ops  ·  Splunk Hackathon 2026  ·  MIT License
+  </text>
+
+</svg>
